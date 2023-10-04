@@ -19,7 +19,7 @@ def MCF(year, vmin_limit):
     n_truncated = len(truncated_volumes)
 
     # Calculate empirical CDF
-    ecdf = 1 - (np.arange(1, n_truncated + 1) / n_truncated)
+    ecdf = (np.arange(1, n_truncated + 1) / n_truncated)
 
     # Calculate theoretical CDF
     log_values_theoretical = np.log(truncated_volumes / vmin_limit)
@@ -40,15 +40,14 @@ def MCF(year, vmin_limit):
 
 # Function to calculate empirical CDF (eCDF).
 def ecdf(n_truncated):
-    ecdf = np.arange(1, n_truncated + 1) / n_truncated
+    ecdf = 1- (np.arange(1, n_truncated + 1) / n_truncated)
     return ecdf
 
 # Function to calculate theoreteical CDF (tCDF)
 def tcdf(volumes_truncated, selected_vmin, n_truncated):
     log_values_theoretical = np.log(volumes_truncated / selected_vmin)
     b_hat = 1 + n_truncated * (np.sum(log_values_theoretical)) ** (-1)
-    #tcdf = 1 - (volumes_truncated / selected_vmin) ** (1 - b_hat)
-    tcdf = (volumes_truncated / selected_vmin) ** (1 - b_hat)
+    tcdf = 1 - (volumes_truncated / selected_vmin) ** (1 - b_hat)
     return tcdf, b_hat
 
 # Function to calculate power law fit.
