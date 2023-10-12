@@ -3,6 +3,7 @@ from bokeh.layouts import layout, column, row
 from bokeh.models import ColumnDataSource, Slider, Select
 from bokeh.models.widgets import Div
 from bokeh.io import show, output_notebook
+from bokeh.models import HoverTool
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -52,22 +53,23 @@ source_line = ColumnDataSource(data=dict(x=[selected_vmin, selected_vmin], y=[df
 source_power_law = ColumnDataSource(data=dict(x=x_values, y=y_annual))
 
 # Create plots
-data_plot = figure(title="Data Plot", x_axis_type="log", y_axis_type="log", x_axis_label = "Volume (m^3)")
+data_plot = figure(title="Data Plot", x_axis_type="log", y_axis_type="log", x_axis_label="Volume (m^3)", y_axis_label="Normalized Rank")
 data_plot.scatter('x', 'y', source=source_data_plot, legend_label="Data")
 data_plot.line('x', 'y', source=source_line, color='red', legend_label="Selected vmin")
 data_plot.line('x', 'y', source=source_power_law, color='black', legend_label="Power-law fit")
-#data_plot.x_axis_label = "Volume (m^3)"
-#data_plot.y_axis_label = "Normalized Rank"
+hover = HoverTool(tooltips=[
+    ("Volume", "@x"),
+])
+data_plot.add_tools(hover)
 
-cdf_plot = figure(title="CDF Plot", x_axis_type="log")
+cdf_plot = figure(title="CDF Plot", x_axis_type="log", y_axis_label="Percent", x_axis_label="Volume (m^3)")
 cdf_plot.line('x', 'ecdf', source=source_cdf_plot, color='blue', legend_label="ECDF")
 cdf_plot.line('x', 'tcdf', source=source_cdf_plot, color='green', legend_label="TCDF")
-#cdf_plot.x_axis_label = "Volumes"
-#cdf_plot.y_axis_label = "Percent"
+cdf_plot.legend.location = "top_left"
 
 # Create widgets
 year_selector = Select(title="Select Year", value="2013", options=list(getData.dataframes.keys()))
-vmin_slider = Slider(title="vmin", value=log_selected_vmin, start=np.log10(0.0001), end=np.log10(1), step=0.01)
+vmin_slider = Slider(title="vmin", value=log_selected_vmin, start=np.log10(0.0001), end=np.log10(1), step=0.01, width=1150)
 result_display = Div(text=f"v_min: {selected_vmin}, D*: {'NA'}, p-value: {'NA'}, b: {b_hat}, Number of events: {n_truncated}")
 
 # Update function to include the logic from the Dash app
@@ -103,8 +105,13 @@ def update_plots(attr, old, new):
     # Update the data for the power law fit in the data plot
     source_power_law.data = dict(x=x_values, y=y_annual)
     
-    # Update the result text
-    result_display.text = f"v_min: {selected_vmin}, D*: {D_star}, p-value: {p_value}, b: {b_hat}, Number of events: {n_truncated}"
+    # Update the result text    
+    result_display.text = (f"<strong>v_min</strong>: {selected_vmin:.4f}&nbsp;&nbsp;&nbsp;&nbsp;"
+                           f"<strong>Number of events</strong>: {n_truncated}&nbsp;&nbsp;&nbsp;&nbsp;"
+                           f"<strong>D*</strong>: {D_star:.3f}&nbsp;&nbsp;&nbsp;&nbsp;"
+                           f"<strong>p-value</strong>: {p_value:.4f}&nbsp;&nbsp;&nbsp;&nbsp;"
+                           f"<strong>b</strong>: {b_hat:.2f}<br>"
+                           )
 
 # Attach callbacks
 year_selector.on_change('value', update_plots)
@@ -113,17 +120,20 @@ vmin_slider.on_change('value', update_plots)
 # Initial call to update_plots to populate the plots and text
 update_plots(None, None, None)
 
-# Create a row for the widgets and result text
-widget_row = column(year_selector, vmin_slider, result_display)
+# Create a row for the widgets
+widget_row = row(year_selector)
+
+# Create a slider row.
+slider_row = row(vmin_slider)
+
+# Create a column for the result text
+result_row = row(result_display)
 
 # Create a row for the plots
 plot_row = row(data_plot, cdf_plot)
 
-# Stack the widget row and plot row vertically
-final_layout = column(widget_row, plot_row)
+# Stack the rows vertically
+final_layout = column(widget_row, slider_row, result_row, plot_row)
 
 # Add the final layout to your Bokeh app document
 curdoc().add_root(final_layout)
-
-# Arrange layout and add to document
-#curdoc().add_root(row(column(year_selector, vmin_slider, result_display), data_plot, cdf_plot))
